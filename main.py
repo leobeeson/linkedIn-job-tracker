@@ -35,6 +35,16 @@ other = driver.find_element(By.ID, "password")
 other.send_keys(OTHER)
 other.send_keys(Keys.ENTER)
 
+listings = driver.find_elements(By.CSS_SELECTOR, ".job-card-container--clickable")
+
+for listing in listings:
+    listing.click()
+    job_title = listing.find_element(By.CLASS_NAME, "job-card-list__title").text
+    company_name = listing.find_element(By.CLASS_NAME, "job-card-container__company-name").text
+    print(f"job_title: {job_title} -> company_name: {company_name}\n")
+    job_description = driver.find_element(By.CLASS_NAME, "jobs-description-content__text").text
+    print(f"job_description: {job_description}")
+    break
 
 time.sleep(60)
 driver.quit()
