@@ -1,9 +1,15 @@
 import time
+import json
+from urllib.parse import quote_plus
+
 from selenium import webdriver
+
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
+
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.remote.webdriver import WebDriver
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
@@ -20,16 +26,33 @@ ENTITY = os.environ.get("ENTITY")
 OTHER = os.environ.get("OTHER")
 
 
+
+ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
+
+# Functions
+def wait_for_element(driver: WebDriver, class_name: str) -> WebElement:
+    element = WebDriverWait(
+        driver=driver,timeout=3,ignored_exceptions=ignored_exceptions
+        ).until(
+            expected_conditions.presence_of_element_located((By.CLASS_NAME, class_name))
+            )
+    return element
+
+
 # Set path to chromedriver as per your configuration.git
 webdriver_service = Service("C:\Drivers\chromedriver.exe")
 
 # Choose Chrome Browser
 driver = webdriver.Chrome(service=webdriver_service)
 
-# Get page
-# driver.get("https://www.linkedin.com/jobs/")
-# Remote/Scotland/python%20developer
-driver.get("https://www.linkedin.com/jobs/search/?f_AL=true&f_TPR=r2592000&f_WT=2&geoId=100752109&keywords=python%20developer&location=Scotland%2C%20United%20Kingdom")
+
+keyword_argument = "python developer"
+keyword_url_safe = quote_plus(keyword_argument)
+
+location_argument = "scotland, united kingdom"
+location_url_safe = quote_plus(location_argument)
+
+driver.get(f"https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2%2C3&keywords={keyword_url_safe}&location={location_url_safe}")
 
 log_in = driver.find_element(By.LINK_TEXT, "Sign in")
 log_in.click()
@@ -47,37 +70,43 @@ listings = driver.find_elements(By.CLASS_NAME, "jobs-search-results__list-item")
 num_listings = len(listings)
 print(f"Nunber of listings: {num_listings}")
 
+
+listings_data = []
 for idx, listing in enumerate(listings):
-    print(f"\nJob Post #{idx}")
+    listing_data = {}
+    listing_data["results_position"] = idx
+
     listing = driver.find_elements(By.CLASS_NAME, "jobs-search-results__list-item")[idx]
-    time.sleep(1)
+    time.sleep(0.5)
     listing.click()
-    time.sleep(1)
-    job_title_element = WebDriverWait(
-        listing, 
-        3, 
-        ignored_exceptions=(
-            NoSuchElementException,
-            StaleElementReferenceException)
-            ).until(
-                expected_conditions.presence_of_element_located((By.CLASS_NAME, "job-card-list__title"))
-                )
+    time.sleep(0.5)
+    
+    job_id = listing.get_attribute("data-occludable-job-id")
+    listing_data["job_id"] = job_id
+
+    job_title_element = wait_for_element(listing, "job-card-list__title")
     job_title = job_title_element.text
-    print(f"job_title: {job_title}")
-    company_name_element = WebDriverWait(
-        listing, 
-        3, 
-        ignored_exceptions=(
-            NoSuchElementException,
-            StaleElementReferenceException)
-            ).until(
-                expected_conditions.presence_of_element_located((By.CLASS_NAME, "job-card-container__company-name"))
-                )
+    listing_data["job_title"] = job_title
+
+    job_url = job_title_element.get_attribute("href")
+    listing_data["job_url"] = job_url
+    
+    company_name_element = wait_for_element(listing, "job-card-container__company-name")
     company_name = company_name_element.text
-    print(f"company_name: {company_name}")
-    job_description = driver.find_element(By.CLASS_NAME, "jobs-description-content__text").text
-    print(f"job_description: {job_description}")
-    # break
+    listing_data["company_name"] = company_name
+    
+    job_description_element = wait_for_element(driver, "jobs-description-content__text")
+    job_description = job_description_element.text
+    listing_data["job_description"] = job_description
+    
+    listings_data.append(listing_data)
+
+
+date_prefix = time.strftime("%Y-%m-%d")
+
+listings_data_filename = f"{date_prefix}_{keyword_url_safe}_{location_url_safe}.json"
+with open(f"data/{listings_data_filename}", "w", encoding="utf-8") as f:
+    json.dump(listings_data, f, ensure_ascii=False, indent=4)
 
 time.sleep(60)
 driver.quit()
