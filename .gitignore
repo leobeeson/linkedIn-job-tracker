@@ -49,3 +49,5 @@ dist/**
 
 # Project-specific
 .env
+scratchpad.py
+notes.md
