@@ -1,4 +1,4 @@
-from gensim.models.phrases import Phrases
+from gensim.models.phrases import Phrases, ENGLISH_CONNECTOR_WORDS
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, remove_stopwords, strip_short
 
 import os
@@ -38,10 +38,44 @@ for listing in corpus_raw:
 len(corpus_doc_list)
 
 
-CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, remove_stopwords, strip_short]
+CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces]#, remove_stopwords, strip_short]
 corpus_preprocessed = []
 for doc in corpus_doc_list:
     doc_preprocessed = preprocess_string(doc, CUSTOM_FILTERS)
     corpus_preprocessed.append(doc_preprocessed)
 
+len(corpus_preprocessed)
 corpus_preprocessed[1]
+
+
+
+mwe_bigram_model = Phrases(
+    sentences=corpus_preprocessed,
+    min_count=10,
+    threshold=0,
+    scoring="npmi",
+    connector_words=ENGLISH_CONNECTOR_WORDS)
+mwe_bigrams_export = mwe_bigram_model.export_phrases()
+
+
+corpus_bigrams = []
+for doc in corpus_preprocessed:
+    doc_bigrams = mwe_bigram_model[doc]
+    corpus_bigrams.append(doc_bigrams)
+len(corpus_bigrams)
+corpus_bigrams[1]
+
+mwe_trigram_model = Phrases(
+    sentences=corpus_bigrams,
+    min_count=10,
+    threshold=0,
+    scoring="npmi",
+    connector_words=ENGLISH_CONNECTOR_WORDS)
+mwe_trigrams_export = mwe_trigram_model.export_phrases()
+
+corpus_trigrams = []
+for doc in corpus_bigrams:
+    doc_trigrams = mwe_trigram_model[doc]
+    corpus_trigrams.append(doc_trigrams)
+len(corpus_trigrams)
+corpus_trigrams[1]
