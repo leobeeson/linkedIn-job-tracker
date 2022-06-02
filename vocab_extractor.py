@@ -1,5 +1,6 @@
-from gensim.models.phrases import Phrases, ENGLISH_CONNECTOR_WORDS
+from gensim.models.phrases import Phrases, FrozenPhrases, ENGLISH_CONNECTOR_WORDS
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, remove_stopwords, strip_short
+from utils.stopwords import stopwords_english
 
 import os
 import json
@@ -31,6 +32,7 @@ for file in data_files:
 len(corpus_raw)
 corpus_raw[0]
 
+### Extract text from which to extract MWE:
 corpus_doc_list = []
 for listing in corpus_raw:
     corpus_doc_list.append(listing["job_title"])
@@ -38,6 +40,7 @@ for listing in corpus_raw:
 len(corpus_doc_list)
 
 
+### Tokenise and clean text:
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces]#, remove_stopwords, strip_short]
 corpus_preprocessed = []
 for doc in corpus_doc_list:
@@ -48,7 +51,7 @@ len(corpus_preprocessed)
 corpus_preprocessed[1]
 
 
-
+### Train Bigrams model:
 mwe_bigram_model = Phrases(
     sentences=corpus_preprocessed,
     min_count=10,
@@ -57,7 +60,6 @@ mwe_bigram_model = Phrases(
     connector_words=ENGLISH_CONNECTOR_WORDS)
 mwe_bigrams_export = mwe_bigram_model.export_phrases()
 
-
 corpus_bigrams = []
 for doc in corpus_preprocessed:
     doc_bigrams = mwe_bigram_model[doc]
@@ -65,6 +67,8 @@ for doc in corpus_preprocessed:
 len(corpus_bigrams)
 corpus_bigrams[1]
 
+
+### Train Trigrams model:
 mwe_trigram_model = Phrases(
     sentences=corpus_bigrams,
     min_count=10,
@@ -79,3 +83,28 @@ for doc in corpus_bigrams:
     corpus_trigrams.append(doc_trigrams)
 len(corpus_trigrams)
 corpus_trigrams[1]
+
+
+## Filter MWE:
+def identify_mwe_with_leading_and_trailing_stopwords(mwe_export: dict, stopwords: list) -> dict:
+    mwe_blacklist = []
+    for mwe in mwe_export:
+        terms = mwe.split("_")
+        if terms[0] in stopwords and terms[-1] in stopwords:
+            mwe_blacklist.append(mwe)
+    return mwe_blacklist
+
+mwe_blacklist = identify_mwe_with_leading_and_trailing_stopwords(mwe_trigrams_export, stopwords_english["stopwords"])
+
+
+mwe_trigram_frozen = mwe_trigram_model.freeze()
+
+def remove_blacklisted_mwe(mwe: FrozenPhrases, blacklist: list) -> FrozenPhrases:
+    for term in blacklist:
+        del mwe.phrasegrams[term]
+    return mwe
+    
+mwe_trigram_filtered = remove_blacklisted_mwe(mwe_trigram_frozen, mwe_blacklist)
+
+# TODO: mwe in blacklist not being removed from phrasegram object
+mwe_trigram_filtered.phrasegrams
