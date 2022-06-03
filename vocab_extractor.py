@@ -35,8 +35,12 @@ corpus_raw[0]
 ### Extract text from which to extract MWE:
 corpus_doc_list = []
 for listing in corpus_raw:
-    corpus_doc_list.append(listing["job_title"])
-    corpus_doc_list.append(listing["job_description"])
+    job_title = listing["job_title"]
+    if job_title is not None:
+        corpus_doc_list.append(job_title)
+    job_description = listing["job_description"]
+    if job_description is not None:
+        corpus_doc_list.append(job_description)
 len(corpus_doc_list)
 
 
@@ -90,21 +94,25 @@ def identify_mwe_with_leading_and_trailing_stopwords(mwe_export: dict, stopwords
     mwe_blacklist = []
     for mwe in mwe_export:
         terms = mwe.split("_")
-        if terms[0] in stopwords and terms[-1] in stopwords:
+        if terms[0] in stopwords or terms[-1] in stopwords:
             mwe_blacklist.append(mwe)
     return mwe_blacklist
 
 mwe_blacklist = identify_mwe_with_leading_and_trailing_stopwords(mwe_trigrams_export, stopwords_english["stopwords"])
 
-
 mwe_trigram_frozen = mwe_trigram_model.freeze()
+
 
 def remove_blacklisted_mwe(mwe: FrozenPhrases, blacklist: list) -> FrozenPhrases:
     for term in blacklist:
-        del mwe.phrasegrams[term]
+        try:
+            del mwe.phrasegrams[term]
+        except KeyError:
+            print(f"MWE not in frozen model: {term}")
     return mwe
-    
-mwe_trigram_filtered = remove_blacklisted_mwe(mwe_trigram_frozen, mwe_blacklist)
 
-# TODO: mwe in blacklist not being removed from phrasegram object
+mwe_trigram_filtered = remove_blacklisted_mwe(mwe_trigram_frozen, mwe_blacklist)
 mwe_trigram_filtered.phrasegrams
+
+#TODO:
+# Analyze software development-related MWE: How can we raise their signal?
