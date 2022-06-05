@@ -2,9 +2,20 @@ from gensim.models.phrases import Phrases, FrozenPhrases, ENGLISH_CONNECTOR_WORD
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, remove_stopwords, strip_short
 from utils.stopwords import stopwords_english
 
+from collections import OrderedDict
+
 import os
 import json
 
+# Functions:
+
+def sort_mwe_export(mwe_export: dict, reversed: bool = True) -> dict:
+    mwe_sorted = OrderedDict(
+        sorted(
+            mwe_export.items(), key=lambda kv: kv[1], reverse=reversed
+            )
+        )
+    return mwe_sorted
 
 
 # Train Baseline Model #
@@ -63,6 +74,7 @@ mwe_bigram_model = Phrases(
     scoring="npmi",
     connector_words=ENGLISH_CONNECTOR_WORDS)
 mwe_bigrams_export = mwe_bigram_model.export_phrases()
+mwe_bigrams_export_sorted = sort_mwe_export(mwe_bigrams_export)
 
 corpus_bigrams = []
 for doc in corpus_preprocessed:
@@ -80,6 +92,7 @@ mwe_trigram_model = Phrases(
     scoring="npmi",
     connector_words=ENGLISH_CONNECTOR_WORDS)
 mwe_trigrams_export = mwe_trigram_model.export_phrases()
+mwe_trigrams_export_sorted = sort_mwe_export(mwe_trigrams_export)
 
 corpus_trigrams = []
 for doc in corpus_bigrams:
