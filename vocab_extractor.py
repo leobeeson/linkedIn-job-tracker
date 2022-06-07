@@ -53,7 +53,7 @@ for listing in corpus_raw:
     if job_description is not None:
         corpus_doc_list.append(job_description)
 len(corpus_doc_list)
-
+corpus_doc_list[1]
 
 ### Tokenise and clean text:
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces]#, remove_stopwords, strip_short]
