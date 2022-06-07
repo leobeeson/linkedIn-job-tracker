@@ -41,8 +41,13 @@ def wait_for_element(driver: WebDriver, class_name: str) -> WebElement:
 
 def click_on_pagination_number(page_number: int) -> None:
     page_xpath = f"/html/body/div[7]/div[3]/div[3]/div[2]/div/section[1]/div/div/section/div/ul/li[{page_number}]/button"
-    pagination = driver.find_element(By.XPATH, page_xpath)
-    pagination.click()
+    try:
+        pagination = driver.find_element(By.XPATH, page_xpath)
+        pagination.click()
+    except NoSuchElementException: 
+        driver.back()
+        pagination = driver.find_element(By.XPATH, page_xpath)
+        pagination.click()
     time.sleep(5)
 
 
@@ -88,7 +93,7 @@ for page_num in range(1, len(pages) + 1):
     print(f"Page Number: {page_num}")
     listings = driver.find_elements(By.CLASS_NAME, "jobs-search-results__list-item")
     num_listings = len(listings)
-    print("Number of listings: {num_listings}")
+    print(f"Number of listings: {num_listings}")
     
     current_page_url = full_url
 
